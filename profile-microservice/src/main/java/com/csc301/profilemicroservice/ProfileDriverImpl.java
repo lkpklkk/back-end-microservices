@@ -104,9 +104,15 @@ public class ProfileDriverImpl implements ProfileDriver {
 	@Override
 	public DbQueryStatus unfollowFriend(String userName, String frndUserName) {
 	  String queryStr= String.format("MATCH (a)-[r:follows]-(b) WHERE a.userName=\"%s\" AND b.userName = \"%s\" DELETE r", userName,frndUserName);
+	  String queryCheck = String.format("MATCH (a)-[r:follows]-(b) WHERE a.userName=\"%s\" AND b.userName = \"%s\" RETURN count(r) AS num", userName,frndUserName);
       try(Session session = driver.session()){
-        try{
-           session.run(queryStr);
+        try(Transaction tx= session.beginTransaction()){
+           if(tx.run(queryCheck).single().get("num").asInt()<1){
+             tx.success();
+             return new DbQueryStatus("already exist",DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
+           }
+           tx.run(queryStr);
+           tx.success();
         }catch(Exception e) {
           return new DbQueryStatus(e.getMessage(),DbQueryExecResult.QUERY_ERROR_NOT_FOUND);
         }
@@ -134,17 +140,18 @@ public class ProfileDriverImpl implements ProfileDriver {
 	            ArrayList<String> titles = new ArrayList<String>();
 	            StatementResult songIds = tx.run(String.format("MATCH (b:profile)-[:created]->(p:playlist)-[:includes]->(s:song) WHERE b.userName = \"%s\" RETURN s.songId as sId", curName));
 	            
-	            songIds.forEachRemaining(s->{
-	              try {
-                  titles.add(helperGetSongTitle(s.get("sId").asString()));
-                } catch (ParseException e) {
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
-                } catch (IOException e) {
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
-                }
-	            });
+	            
+	              songIds.forEachRemaining(s->{
+	              
+                  try {
+                    titles.add(helperGetSongTitle(s.get("sId").asString()));
+                  } catch (ParseException | IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                  }
+                });
+	              
+	            
 	            dataSongTitle.put(curName, titles);
 	            
 	          });

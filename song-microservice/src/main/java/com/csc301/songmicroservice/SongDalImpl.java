@@ -77,8 +77,9 @@ public class SongDalImpl implements SongDal {
 	       
         Song song = db.findById(new ObjectId(songId), Song.class);
         DbQueryStatus queryStatus = new DbQueryStatus("",DbQueryExecResult.QUERY_OK);
-        db.remove(song);
+        
         if(okhttpHelperDeleteSongFromProfile(songId)) {
+          db.remove(song);
           return queryStatus;
         }
         else {
