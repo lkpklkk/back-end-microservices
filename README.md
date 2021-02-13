@@ -1,2 +1,2 @@
-# Springboot mini project
-A practise on sprinboot by building two intercommunicating micro services
+# Springboot mini assignment
+An assignment on sprinboot by building two intercommunicating micro services
